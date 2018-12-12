@@ -1,5 +1,5 @@
 {
-  "name": "wizardamigos-workshop",
+  "name": "workshop_module",
   "version": "0.1.0",
   "description": "module for making workshop apps",
   "main": "src/workshop.js",
@@ -16,7 +16,7 @@
     "workshop",
     "workshopper"
   ],
-  "author": "@serapath",
+  "author": "@ninabreznik",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/wizardamigos/wizardamigos-workshop/issues"

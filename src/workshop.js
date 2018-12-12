@@ -4,10 +4,13 @@ var belmark = require('belmark')
 
 module.exports = workshop
 
+var minimap
+
 async function workshop ({ workshop, theme = {} } = {}) {
   // var data = workshop ? require(workshop) : await fetch('/workshop.json')
   var data = await fetch(new URL('./workshop.json', location.href).href).then(response => response.json())
   var font_url = theme['--font']
+  minimap = theme['--map']
   var lessons = data.lessons
   var chat = data.chat
   if (!chat) throw new Error('no chat found')
@@ -17,15 +20,15 @@ async function workshop ({ workshop, theme = {} } = {}) {
   var video = iframe(lessons[0].lesson, css.video)
   var editor = iframe(lessons[0].tool, css.editor)
   var gitter = iframe(chat, css.gitter)
-  var title = bel`<div class=${css.title}>${lessons[0].title}</div>`
+  var title = bel`<div title=${lessons[0].title} class=${css.title}>${lessons[0].title}</div>`
   var logo_url = data.icon
 
   var logo = logo_url ? bel`
-    <img class="${css.logo} ${css.img}" onclick=${home} title="made with love by Wizard Amigos" src="${logo_url}">
+    <img class="${css.logo} ${css.img}" onclick=${home} title="decentralized e-learning made by play.ethereum.org" src="${logo_url}">
   ` : ''
 
   var lesson = 0
-  var series = bel`<span class=${css.series}>${data.title + ': ' || ''}</span>`
+  var series = bel`<span class=${css.series}>${'Learn with Play: ' +  data.title}</span>`
 
   var chatBox = bel`<div class=${css.chatBox}>
     <div style="width: 100%; height: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center">
@@ -52,9 +55,9 @@ async function workshop ({ workshop, theme = {} } = {}) {
   var infoBox = bel`<div class=${css.infoBox}>${info || xxx}</div></div>`
   var view = 'info'
 
-  var stats = bel`<span class=${css.stats}>Lesson ${lesson + 1}/${lessons.length}</span>`
-  var infoButton = bel`<button class="${css.infoViewButton} ${css.button}" title='infoButton' onclick=${changeView}>Info</button>`
-  var chatButton = bel`<button class="${css.chatViewButton} ${css.button}" title='chatButton' onclick=${changeView}>Chat</button>`
+  var stats = bel`<span class=${css.stats}>${lesson + 1}/${lessons.length}</span>`
+  var infoButton = bel`<div class="${css.infoViewButton}" title='infoButton' onclick=${changeView}>Info</div>`
+  var chatButton = bel`<div class="${css.chatViewButton}" title='chatButton' onclick=${changeView}>Chat</div>`
 
   var needsOpen = false
   var unlocksOpen = false
@@ -80,9 +83,7 @@ async function workshop ({ workshop, theme = {} } = {}) {
       unlocksOpen = false
     } else {
       var el = bel`
-      <ul id="unlocks" style="position: absolute; top: 75px; right: 0; width:100px; height: 100px; background-color: pink;">
-      ${data.unlocks.map(url => bel`<li><a href="${url}" target="_blank">${url}</a></li>`)}
-      </ul>
+      <div id="unlocks" class=${css.minimapExtended}></div>
       `
       document.body.appendChild(el)
       unlocksOpen = true
@@ -91,18 +92,22 @@ async function workshop ({ workshop, theme = {} } = {}) {
   var app = bel`
     <div class="${css.content}">
       <div class=${css.menu}>
-        <button class=${css.button} onclick=${needs}> ${'▼'} </button>
-        <button class=${css.button} onclick=${previous}> ${'<'} </button>
+        <div class=${css.minimap} onclick=${unlocks}><input class=${css.minimapButton} title="Skill tree" type="image" src="${minimap}"></div>
         <span class=${css.head}>
-          <span class=${css.banner}>${logo} ${series} ${stats}</span>
-          ${title}
+          <span class=${css.banner}>${logo} ${series}</span>
+          ${stats} ${title}
         </span>
-        <button class=${css.button} onclick=${next}> ${'>'} </button>
-        <button class=${css.button} onclick=${unlocks}> ${'▼'} </button>
       </div>
       <div class=${css.container}>
         <div class=${css.narrow}>
-          ${video}
+          <div class=${css.top}>
+            <div class=${css.switchButtons}>
+              <div class="${css.previous}" title="Previous lesson" onclick=${previous}> ${'<'} </div>
+              <div class=${css.lesson}>${title} ${stats}</div>
+              <div class="${css.next}" title="Next lesson" onclick=${next}> ${'>'} </div>
+            </div>
+            ${video}
+          </div>
           <div class=${css.bottom}>
             <div class=${css.switchButtons}>
               ${infoButton}
@@ -131,11 +136,12 @@ async function workshop ({ workshop, theme = {} } = {}) {
     var old = video
     video = iframe(lessons[lesson].lesson, css.video)
     old.parentElement.replaceChild(video, old)
-    stats.innerText = `Lesson ${lesson + 1}/${lessons.length}`
+    stats.innerText = `${lesson + 1}/${lessons.length}`
     title.innerText = lessons[lesson].title || ''
+    title.title = title.innerText
     if (lessons[lesson].info) {
       info.innerText = ''
-      info.appendChild(await getMarkdown(lessons[0].info))
+      info.appendChild(belmark(lessons[lesson].info))
     } else {
       info.innerText = ''
       info.appendChild(belmark`no description`)
@@ -148,8 +154,9 @@ async function workshop ({ workshop, theme = {} } = {}) {
     var old = video
     video = iframe(lessons[lesson].lesson, css.video)
     old.parentElement.replaceChild(video, old)
-    stats.innerText = `Lesson ${lesson + 1}/${lessons.length}`
+    stats.innerText = `${lesson + 1}/${lessons.length}`
     title.innerText = lessons[lesson].title || ''
+    title.title = title.innerText
     if (lessons[lesson].info) {
       info.innerText = ''
       info.appendChild(belmark(lessons[lesson].info))
@@ -171,7 +178,7 @@ async function workshop ({ workshop, theme = {} } = {}) {
   }
 
   function changeView (e) {
-    // console.log(e.target.title)
+    console.log(e.target.title)
     // console.log('view =', view)
     var parent = document.querySelector(`.${css.bottom}`)
     // console.log(parent)
@@ -202,7 +209,7 @@ async function workshop ({ workshop, theme = {} } = {}) {
   }
 
   function home () {
-    window.open('http://wizardamigos.com/', '_blank');
+    window.open('http://github.com/ethereum/play', '_blank');
   }
 }
 
@@ -216,6 +223,20 @@ function styles (font_url) {
     }
     </style>`
   document.head.appendChild(font)
+
+  var colors = {
+    white: "#ffffff", // borders, font on input background
+    dark: "#2c323c", //background dark
+    darkSmoke: '#21252b',  // separators
+    whiteSmoke: "#f5f5f5", // background light
+    lavenderGrey: "#e3e8ee", // inputs background
+    slateGrey: "#8a929b", // text
+    violetRed: "#b25068",  // used as red in types (bool etc.)
+    aquaMarine: "#90FCF9",  // used as green in types (bool etc.)
+    turquoise: "#14b9d5",
+    yellow: "#F2CD5D",
+    androidGreen: "#9BC53D"
+  }
 
   var css = csjs`
     *, *:before, *:after { box-sizing: inherit; }
@@ -233,127 +254,180 @@ function styles (font_url) {
     .menu {
       display: flex;
       align-items: center;
-      min-height: 90px;
-      height: 10%;
-      justify-content: space-between;
-      border: 5px solid #d6dbe1;
+      height: 5%;
+      background-color: ${colors.dark};
     }
     .container {
       display: flex;
-      background-color: #43409a;
-      border: 5px solid #d6dbe1;
+      background-color: ${colors.dark};
       border-top: none;
       flex-grow: 1;
     }
-    .button {
+    .previous, .next {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      width: 100px;
-      height: 100%;
-      font-size: 75px;
-      font-weight: 900;
-      font-family: ${FONT};
-      border: none;
-      background-color: #ffd399;
-      color: white;
+      width: 40px;
+      height: 40px;
+      line-height: 100%;
+      font-size: calc(20px + 0.3vw);
+    }
+    .previous:hover, .next:hover {
+      color: ${colors.lavenderGrey};
+    }
+    .lesson {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      justify-content: space-evenly;
+      align-items: center;
+      width: 100%;
+      height: 40px;
+      padding: 0 2%;
+      border-left: 2px solid ${colors.dark};
+      border-right: 2px solid ${colors.dark};
     }
     .head {
       margin: 0 5%;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      width: 75%;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
       color: black;
-      font-size:30px;
       font-family: ${FONT};
-      font-weight: 900;
     }
     .button:hover {
-      background-color: #43409a;
+      color: ${colors.lavenderGrey};
     }
     .logo {
-      margin-right: 20px;
-      width: 50px;
-      height: 50px;
+      width: 35px;
+      height: 35px;
     }
     .logo:hover {
       opacity: 0.9;
       cursor: pointer;
     }
     .banner {
-      margin: 0 5%;
       display: flex;
-      color: black;
-      font-size:30px;
-      font-family: ${FONT};
-      font-weight: 900;
+      align-items: center;
+      height: 100%;
     }
     .stats {
-      display: flex;
-      align-self: center;
     }
     .series {
+      cursor: default;
       display: flex;
-      align-self: center;
-      padding-right: 10px;
+      align-items: center;
+      justify-content: center;
+      padding-left: 2%;
+      color: ${colors.androidGreen};
+      font-size: calc(10px + 0.5vw);
+      font-weight: 900;
+      white-space: nowrap;
+      padding-top: 3px;
+    }
+    .minimapButton {
+      border-radius: 50%;
+      border: 1.5px solid ${colors.androidGreen};
+      cursor: pointer;
+      width: calc(10px + 1.5vmin);
+      height: calc(10px + 1.5vmin);
+    }
+    .minimap {
+      background-color: ${colors.dark};
+      width: 30px;
+      height: 30px;
+      margin-left: 2%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .minimapExtended {
+      background-image: url("${minimap}");
+      position: absolute;
+      top: 49px;
+      left: 0px;
+      width: 500px;
+      height: 500px;
     }
     .wide {
-      margin: 1%;
       display: flex;
       flex-direction: column;
       width: 70%;
     }
     .narrow {
-      margin: 1%;
-      width: 27%;
+      width: 30%;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
     .editor {
-      border: 5px solid #d6dbe1;
       width: 100%;
       height: 100%;
     }
     .video {
-      border: 5px solid #d6dbe1;
       width: 100%;
-      height: 50%;
-      margin-bottom: 2%;
+      height: 100%;
+      border-top: 2px solid ${colors.dark};
     }
     .title {
-      color: grey;
-      font-size: 25px;
+      cursor: default;
+      margin-right: 2%;
+      width: 70%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top {
+      display: flex;
+      height: 50%;
+      flex-direction: column;
+      flex-grow: 1;
     }
     .bottom {
       display: flex;
       height: 50%;
       flex-direction: column;
-      margin-top: 2%;
       flex-grow: 1;
     }
     .switchButtons {
+      font-size: calc(10px + 0.3vw);
+      background-color: ${colors.androidGreen};
+      color: ${colors.dark};
+      border: none;
+      font-family: ${FONT};
+      font-weight: 900;
       display: flex;
       width: 100%;
+      height: 40px;
       flex-direction: row;
       justify-content: center;
     }
+    .infoViewButton {
+      border-right: 1px solid ${colors.dark};
+    }
+    .chatViewButton {
+      border-left: 1px solid ${colors.dark};
+    }
     .infoViewButton,
     .chatViewButton {
-      border: 5px solid #d6dbe1;
-      font-size: 20px;
       width: 50%;
       height: 40px;
-      background-color: parent;
-      font-style: capitalize;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
     }
     .infoViewButton:hover,
     .chatViewButton:hover {
-      background-color: white;
-      color: #43409a;
+      color: ${colors.lavenderGrey};
     }
     .infoBox {
-      background-color: white;
-      margin-top: calc(7px);
+      background-color: ${colors.lavenderGrey};
+      border-top: 2px solid ${colors.dark};
       width: 100%;
       height: 100%;
       display: flex;
@@ -371,6 +445,7 @@ function styles (font_url) {
       font-family: ${FONT};
       overflow-y: auto;
       flex-grow: 1;
+      border-top: 2px solid ${colors.dark};
     }
     .gitter {
       position: absolute;
@@ -384,9 +459,9 @@ function styles (font_url) {
       font-family: ${FONT};
     }
     .welcome {
-      font-size: 20px;
-      padding: 0 10%;
-      color: #43409a;
+      font-size: calc(10px + 0.3vw);
+      padding: 0 5%;
+      color: ${colors.dark};
     }`
   return css
 }
